@@ -1,0 +1,2508 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kare Savaşları</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .game-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+
+        .current-player {
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 25px;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .player-stats {
+            display: flex;
+            gap: 20px;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+            min-width: 80px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(50, 12px);
+            grid-template-rows: repeat(50, 12px);
+            gap: 1px;
+            background: #e9ecef;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px auto;
+            border: 3px solid #495057;
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px);
+            background-size: 13px 13px;
+        }
+
+        .cell {
+            width: 12px;
+            height: 12px;
+            border: 0.5px solid rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .cell:hover {
+            transform: scale(1.2);
+            z-index: 10;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .cell.empty {
+            background: white;
+        }
+
+        .cell.player1 {
+            background: #dc3545;
+        }
+
+        .cell.player2 {
+            background: #007bff;
+        }
+
+        .cell[class*="npc"] {
+            background: #f8f9fa;
+            border: none;
+            box-sizing: border-box;
+        }
+
+        .cell.npc-border-top { border-top: 2px solid #6c757d; }
+        .cell.npc-border-bottom { border-bottom: 2px solid #6c757d; }
+        .cell.npc-border-left { border-left: 2px solid #6c757d; }
+        .cell.npc-border-right { border-right: 2px solid #6c757d; }
+
+        .cell.selected {
+            background: #fd7e14 !important;
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { opacity: 0.7; }
+            to { opacity: 1; }
+        }
+
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .card-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .flip-card {
+            background-color: transparent;
+            width: 150px;
+            height: 150px;
+            perspective: 1000px;
+            margin: 0 auto 15px;
+            cursor: pointer;
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+            border-radius: 50%;
+        }
+
+        .flip-card.flipping .flip-card-inner {
+            animation: cardSpin 4s ease-in-out;
+        }
+
+        @keyframes cardSpin {
+            0% { transform: rotateY(0deg) rotateX(0deg); }
+            10% { transform: rotateY(360deg) rotateX(180deg); }
+            20% { transform: rotateY(720deg) rotateX(360deg); }
+            30% { transform: rotateY(1080deg) rotateX(540deg); }
+            40% { transform: rotateY(1440deg) rotateX(720deg); }
+            50% { transform: rotateY(1800deg) rotateX(900deg); }
+            60% { transform: rotateY(2160deg) rotateX(1080deg); }
+            70% { transform: rotateY(2520deg) rotateX(1260deg); }
+            80% { transform: rotateY(2880deg) rotateX(1440deg); }
+            90% { transform: rotateY(3240deg) rotateX(1620deg); }
+            100% { transform: rotateY(3600deg) rotateX(1800deg); }
+        }
+
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            border: 4px solid #ffd700;
+        }
+
+        .flip-card-front {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        .flip-card-back {
+            background: linear-gradient(135deg, #dc3545, #e83e8c);
+            transform: rotateY(180deg);
+        }
+
+        .card-text {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            letter-spacing: 1px;
+        }
+
+        .card-instruction {
+            font-size: 1.1rem;
+            color: #6c757d;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .flip-card:hover {
+            transform: scale(1.05);
+            transition: transform 0.3s ease;
+        }
+
+        .flip-card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .coin-flip-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .coin {
+            width: 200px;
+            height: 200px;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: coinFlip 3s ease-in-out;
+        }
+
+        .coin-side {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 8px solid #ffd700;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
+            font-size: 2rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .coin-heads {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .coin-tails {
+            background: linear-gradient(135deg, #dc3545, #e83e8c);
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        @keyframes coinFlip {
+            0% {
+                transform: rotateY(0deg) rotateX(0deg) scale(1);
+            }
+            10% {
+                transform: rotateY(180deg) rotateX(90deg) scale(1.1);
+            }
+            20% {
+                transform: rotateY(360deg) rotateX(180deg) scale(1.2);
+            }
+            30% {
+                transform: rotateY(540deg) rotateX(270deg) scale(1.1);
+            }
+            40% {
+                transform: rotateY(720deg) rotateX(360deg) scale(1.2);
+            }
+            50% {
+                transform: rotateY(900deg) rotateX(450deg) scale(1.3);
+            }
+            60% {
+                transform: rotateY(1080deg) rotateX(540deg) scale(1.2);
+            }
+            70% {
+                transform: rotateY(1260deg) rotateX(630deg) scale(1.1);
+            }
+            80% {
+                transform: rotateY(1440deg) rotateX(720deg) scale(1.05);
+            }
+            90% {
+                transform: rotateY(1620deg) rotateX(810deg) scale(1.02);
+            }
+            100% {
+                transform: rotateY(1800deg) rotateX(900deg) scale(1);
+            }
+        }
+
+        .coin-result {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            text-align: center;
+            z-index: 2001;
+            min-width: 350px;
+            animation: resultPop 0.5s ease-out;
+        }
+
+        @keyframes resultPop {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 0;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .coin-result-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .coin-result.win .coin-result-icon {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        .coin-result.lose .coin-result-icon {
+            background: linear-gradient(135deg, #dc3545, #e83e8c);
+        }
+
+        .coin-result h2 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .coin-result.win h2 {
+            color: #28a745;
+        }
+
+        .coin-result.lose h2 {
+            color: #dc3545;
+        }
+
+        .coin-result p {
+            font-size: 1.2rem;
+            color: #6c757d;
+            margin-bottom: 20px;
+        }
+
+        .continue-btn {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .continue-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(68, 160, 141, 0.4);
+        }
+
+        .selection-info {
+            margin: 15px 0;
+            padding: 10px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .battle-result {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            z-index: 1000;
+            min-width: 300px;
+        }
+
+        .battle-result.success {
+            color: #28a745;
+            border: 3px solid #28a745;
+        }
+
+        .battle-result.failure {
+            color: #dc3545;
+            border: 3px solid #dc3545;
+        }
+
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .game-over-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        .winner-text {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .restart-btn {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .restart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(68, 160, 141, 0.4);
+        }
+
+        .setup-container {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .setup-header {
+            margin-bottom: 40px;
+        }
+
+        .setup-subtitle {
+            font-size: 1.2rem;
+            color: #6c757d;
+            margin-top: 10px;
+        }
+
+        .players-setup {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .player-setup {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+        }
+
+        .player-setup h3 {
+            font-size: 1.5rem;
+            color: #495057;
+            margin-bottom: 20px;
+        }
+
+        .setup-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .setup-group label {
+            display: block;
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        .setup-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .setup-group input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        .color-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .color-option.selected {
+            border-color: #333;
+            transform: scale(1.15);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .color-option.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .color-option.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            position: relative;
+        }
+
+        .color-option.disabled::before {
+            content: '✗';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #dc3545;
+            font-weight: bold;
+            font-size: 1.2rem;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+        }
+
+        .vs-divider {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #6c757d;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .player-count-selection {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+        }
+
+        .player-count-selection h3 {
+            font-size: 1.3rem;
+            color: #495057;
+            margin-bottom: 15px;
+        }
+
+        .player-count-options {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .player-count-btn {
+            background: white;
+            border: 2px solid #dee2e6;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            color: #495057;
+            font-size: 1rem;
+        }
+
+        .player-count-btn:hover {
+            border-color: #007bff;
+            background: #e3f2fd;
+            transform: translateY(-2px);
+        }
+
+        .player-count-btn.selected {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        }
+
+        .setup-controls {
+            text-align: center;
+        }
+
+        .start-game-btn {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(68, 160, 141, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .start-game-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(68, 160, 141, 0.6);
+        }
+
+        .start-game-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .save-player-btn {
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            width: 100%;
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        }
+
+        .save-player-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.5);
+        }
+
+        .save-player-btn.saved {
+            background: linear-gradient(45deg, #28a745, #1e7e34);
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+
+        .save-player-btn.saved:hover {
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.5);
+        }
+
+        .player-setup.saved {
+            background: #e8f5e8;
+            border-color: #28a745;
+        }
+
+        .player-setup.saved h3::after {
+            content: ' ✓';
+            color: #28a745;
+        }
+
+        .territory-label {
+            position: absolute;
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            pointer-events: none;
+            z-index: 5;
+            white-space: nowrap;
+            text-align: center;
+            transform: translate(-50%, -50%);
+        }
+
+        @media (max-width: 768px) {
+            .game-board {
+                grid-template-columns: repeat(50, 8px);
+                grid-template-rows: repeat(50, 8px);
+                padding: 10px;
+            }
+            
+            .cell {
+                width: 8px;
+                height: 8px;
+            }
+            
+            .game-title {
+                font-size: 2rem;
+            }
+
+            .players-setup {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .player-count-options {
+                gap: 5px;
+            }
+
+            .player-count-btn {
+                padding: 8px 15px;
+                font-size: 0.9rem;
+            }
+
+            .setup-container {
+                padding: 20px;
+            }
+
+            .color-options {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .color-option {
+                width: 35px;
+                height: 35px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Setup Screen -->
+    <div class="setup-container" id="setupContainer">
+        <div class="setup-header">
+            <h1 class="game-title">🏰 Kare Savaşları 🏰</h1>
+            <p class="setup-subtitle">Oyuncu sayısını seçin ve isimlerinizi belirleyin!</p>
+        </div>
+
+        <div class="player-count-selection">
+            <h3>👥 Kaç Kişi Oynayacak?</h3>
+            <div class="player-count-options">
+                <button class="player-count-btn selected" data-count="2">2 Kişi</button>
+                <button class="player-count-btn" data-count="3">3 Kişi</button>
+                <button class="player-count-btn" data-count="4">4 Kişi</button>
+                <button class="player-count-btn" data-count="5">5 Kişi</button>
+                <button class="player-count-btn" data-count="6">6 Kişi</button>
+                <button class="player-count-btn" data-count="7">7 Kişi</button>
+                <button class="player-count-btn" data-count="8">8 Kişi</button>
+            </div>
+        </div>
+
+        <div class="players-setup" id="playersSetup">
+            <!-- Players will be dynamically generated here -->
+        </div>
+
+        <div class="setup-controls">
+            <button class="start-game-btn" id="startGameBtn">🚀 Oyunu Başlat!</button>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div class="game-container" id="gameContainer" style="display: none;">
+        <div class="game-header">
+            <h1 class="game-title">🏰 Kare Savaşları 🏰</h1>
+        </div>
+
+        <div class="game-info">
+            <div class="current-player" id="currentPlayer">
+                Oyuncu 1'in Sırası
+            </div>
+            <div class="player-stats" id="playerStats">
+                <!-- Player stats will be dynamically generated here -->
+                <div class="stat">
+                    <div class="stat-value" id="selectedCount">0</div>
+                    <div class="stat-label">Seçilen</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="selection-info" id="selectionInfo">
+            Saldırmak istediğiniz kareleri seçin. En fazla <span id="maxSelection">9</span> kare seçebilirsiniz.
+        </div>
+
+        <div class="game-board" id="gameBoard"></div>
+
+        <div class="controls">
+            <div class="card-container">
+                <div class="flip-card" id="flipCard">
+                    <div class="flip-card-inner" id="flipCardInner">
+                        <div class="flip-card-front">
+                            <div class="card-text">KAZAN</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="card-text">KAYBET</div>
+                        </div>
+                    </div>
+                </div>
+                <p class="card-instruction">Kartı çevirmek için tıklayın!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SquareWars {
+            constructor() {
+                this.boardSize = 50;
+                this.board = Array(this.boardSize).fill().map(() => Array(this.boardSize).fill('empty'));
+                this.currentPlayer = 1;
+                this.selectedCells = [];
+                this.playerCount = 2; // Default player count
+                this.playerTerritories = {};
+                this.neutralTerritories = { 1: 8, 2: 6, 3: 7 };
+                
+                this.availableColors = [
+                    '#dc3545', '#007bff', '#28a745', '#6f42c1', 
+                    '#fd7e14', '#20c997', '#e83e8c', '#6c757d'
+                ];
+                
+                this.playerColors = {};
+                this.playerNames = {};
+                this.savedPlayers = new Set(); // Track which players are saved
+                this.currentSetupPlayer = 1; // Track which player is currently being set up
+                
+                this.npcCountries = [];
+                this.npcNames = [
+                    'Fransa 🇫🇷', 'İspanya 🇪🇸', 'ABD 🇺🇸', 'İtalya 🇮🇹', 'Türkiye 🇹🇷', 'Meksika 🇲🇽',
+                    'Birleşik Krallık 🇬🇧', 'Almanya 🇩🇪', 'Yunanistan 🇬🇷', 'Avusturya 🇦🇹', 'Japonya 🇯🇵', 'Tayland 🇹🇭',
+                    'Hollanda 🇳🇱', 'Portekiz 🇵🇹', 'Birleşik Arap Emirlikleri (Dubai) 🇦🇪', 'Kanada 🇨🇦', 'Polonya 🇵🇱', 'Çin 🇨🇳',
+                    'Mısır 🇪🇬', 'Hindistan 🇮🇳'
+                ];
+                
+                this.gameStarted = false;
+                this.bindSetupEvents();
+                this.generatePlayersSetup();
+            }
+
+            bindSetupEvents() {
+                // Player count selection events
+                document.querySelectorAll('.player-count-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        // Remove selection from other buttons
+                        document.querySelectorAll('.player-count-btn').forEach(b => {
+                            b.classList.remove('selected');
+                        });
+                        
+                        // Add selection to clicked button
+                        e.target.classList.add('selected');
+                        
+                        // Update player count and show/hide players
+                        const newPlayerCount = parseInt(e.target.dataset.count);
+                        this.updatePlayerCount(newPlayerCount);
+                    });
+                });
+
+                // Start game button
+                document.getElementById('startGameBtn').addEventListener('click', () => {
+                    this.startGame();
+                });
+            }
+
+            generatePlayersSetup() {
+                const playersSetupContainer = document.getElementById('playersSetup');
+                playersSetupContainer.innerHTML = '';
+                
+                // Initialize player data
+                this.playerColors = {};
+                this.playerNames = {};
+                this.playerTerritories = {};
+                this.usedColors = new Set();
+                this.usedNames = new Set();
+                this.savedPlayers = new Set();
+                this.currentSetupPlayer = 1;
+                
+                // Always create containers for all possible players, but only show first 2 initially
+                for (let i = 1; i <= 8; i++) {
+                    this.playerColors[i] = this.availableColors[i - 1];
+                    this.playerNames[i] = `Oyuncu ${i}`;
+                    this.playerTerritories[i] = 10;
+                    
+                    const playerSetup = document.createElement('div');
+                    playerSetup.className = 'player-setup';
+                    playerSetup.id = `playerSetup${i}`;
+                    
+                    // Only show first 2 players initially
+                    playerSetup.style.display = i <= 2 ? 'block' : 'none';
+                    
+                    playerSetup.innerHTML = `
+                        <h3>👤 Oyuncu ${i}</h3>
+                        <div class="setup-group">
+                            <label>İsim:</label>
+                            <input type="text" id="player${i}Name" placeholder="Oyuncu ${i}" maxlength="12" 
+                                   onchange="game.validatePlayerName(${i}, this.value)">
+                        </div>
+                        <div class="setup-group">
+                            <label>Renk:</label>
+                            <div class="color-options" id="colorOptions${i}">
+                                ${this.availableColors.map((color, index) => 
+                                    `<div class="color-option ${index === i - 1 ? 'selected' : ''}" 
+                                          data-color="${color}" data-player="${i}" 
+                                          style="background-color: ${color}"></div>`
+                                ).join('')}
+                            </div>
+                            <button class="save-player-btn" id="savePlayer${i}Btn" onclick="game.savePlayer(${i})">
+                                💾 Kaydet
+                            </button>
+                        </div>
+                    `;
+                    
+                    playersSetupContainer.appendChild(playerSetup);
+                }
+                
+                // Initialize used data for first 2 players
+                this.usedColors.add(this.availableColors[0]);
+                this.usedColors.add(this.availableColors[1]);
+                this.usedNames.add('Oyuncu 1');
+                this.usedNames.add('Oyuncu 2');
+                
+                // Bind color selection events
+                this.bindColorEvents();
+                this.bindNameEvents();
+                this.updateSetupDisplay();
+            }
+
+            savePlayer(playerId) {
+                // Get current player data
+                const nameInput = document.getElementById(`player${playerId}Name`);
+                const playerName = nameInput.value.trim() || `Oyuncu ${playerId}`;
+                
+                // Validate name uniqueness
+                if (this.usedNames.has(playerName) && this.playerNames[playerId] !== playerName) {
+                    alert('Bu isim zaten kullanılıyor! Lütfen farklı bir isim seçin.');
+                    return;
+                }
+                
+                // Save player data
+                this.playerNames[playerId] = playerName;
+                this.savedPlayers.add(playerId);
+                
+                // Update UI to show saved state
+                const playerSetup = document.getElementById(`playerSetup${playerId}`);
+                const saveBtn = document.getElementById(`savePlayer${playerId}Btn`);
+                
+                playerSetup.classList.add('saved');
+                saveBtn.textContent = '✅ Kaydedildi';
+                saveBtn.classList.add('saved');
+                
+                // Disable inputs for saved player
+                nameInput.disabled = true;
+                document.querySelectorAll(`[data-player="${playerId}"]`).forEach(option => {
+                    option.style.pointerEvents = 'none';
+                });
+                
+                // Move to next player if more players needed
+                if (this.savedPlayers.size < this.playerCount) {
+                    this.currentSetupPlayer = this.savedPlayers.size + 1;
+                    this.updateSetupDisplay();
+                } else {
+                    // All players saved, enable start game button
+                    this.updateStartGameButton();
+                }
+            }
+
+            updateSetupDisplay() {
+                // Hide all player setups first
+                for (let i = 1; i <= 8; i++) {
+                    const playerSetup = document.getElementById(`playerSetup${i}`);
+                    if (playerSetup) {
+                        playerSetup.style.display = 'none';
+                    }
+                }
+                
+                // Get unsaved players
+                const unsavedPlayers = [];
+                for (let i = 1; i <= this.playerCount; i++) {
+                    if (!this.savedPlayers.has(i)) {
+                        unsavedPlayers.push(i);
+                    }
+                }
+                
+                // Show only the first 2 unsaved players
+                for (let i = 0; i < Math.min(2, unsavedPlayers.length); i++) {
+                    const playerId = unsavedPlayers[i];
+                    const playerSetup = document.getElementById(`playerSetup${playerId}`);
+                    if (playerSetup) {
+                        playerSetup.style.display = 'block';
+                        // Update available colors for this player
+                        this.updateAvailableColors(playerId);
+                    }
+                }
+            }
+
+            updateStartGameButton() {
+                const startBtn = document.getElementById('startGameBtn');
+                if (this.savedPlayers.size === this.playerCount) {
+                    startBtn.disabled = false;
+                    startBtn.textContent = '🚀 Oyunu Başlat!';
+                } else {
+                    startBtn.disabled = true;
+                    startBtn.textContent = `${this.savedPlayers.size}/${this.playerCount} Oyuncu Kaydedildi`;
+                }
+            }
+
+            updatePlayerCount(newPlayerCount) {
+                this.playerCount = newPlayerCount;
+                
+                // Reset saved players if new count is less than saved players
+                if (this.savedPlayers.size > newPlayerCount) {
+                    // Remove excess saved players
+                    const playersToRemove = Array.from(this.savedPlayers).filter(id => id > newPlayerCount);
+                    playersToRemove.forEach(playerId => {
+                        this.savedPlayers.delete(playerId);
+                        this.usedColors.delete(this.playerColors[playerId]);
+                        this.usedNames.delete(this.playerNames[playerId]);
+                        
+                        // Reset player setup UI
+                        const playerSetup = document.getElementById(`playerSetup${playerId}`);
+                        const saveBtn = document.getElementById(`savePlayer${playerId}Btn`);
+                        const nameInput = document.getElementById(`player${playerId}Name`);
+                        
+                        if (playerSetup) playerSetup.classList.remove('saved');
+                        if (saveBtn) {
+                            saveBtn.textContent = '💾 Kaydet';
+                            saveBtn.classList.remove('saved');
+                        }
+                        if (nameInput) nameInput.disabled = false;
+                        
+                        document.querySelectorAll(`[data-player="${playerId}"]`).forEach(option => {
+                            option.style.pointerEvents = 'auto';
+                        });
+                    });
+                }
+                
+                // Update current setup player
+                this.currentSetupPlayer = this.savedPlayers.size + 1;
+                if (this.currentSetupPlayer > newPlayerCount) {
+                    this.currentSetupPlayer = newPlayerCount;
+                }
+                
+                this.updateSetupDisplay();
+                this.updateStartGameButton();
+            }
+
+            updateAvailableColors(playerId) {
+                const colorOptions = document.querySelectorAll(`[data-player="${playerId}"]`);
+                
+                colorOptions.forEach(option => {
+                    const color = option.dataset.color;
+                    const isCurrentPlayerColor = this.playerColors[playerId] === color;
+                    const isUsedByOther = this.usedColors.has(color) && !isCurrentPlayerColor;
+                    
+                    if (isUsedByOther) {
+                        option.classList.add('disabled');
+                        option.classList.remove('selected');
+                    } else {
+                        option.classList.remove('disabled');
+                        if (isCurrentPlayerColor) {
+                            option.classList.add('selected');
+                        }
+                    }
+                });
+            }
+
+            validatePlayerName(playerId, newName) {
+                const trimmedName = newName.trim();
+                const input = document.getElementById(`player${playerId}Name`);
+                
+                if (trimmedName === '') {
+                    // Empty name, use default
+                    const defaultName = `Oyuncu ${playerId}`;
+                    input.value = defaultName;
+                    
+                    // Update used names
+                    if (this.playerNames[playerId]) {
+                        this.usedNames.delete(this.playerNames[playerId]);
+                    }
+                    this.playerNames[playerId] = defaultName;
+                    this.usedNames.add(defaultName);
+                    return;
+                }
+                
+                // Check if name is already used by another player
+                const isUsedByOther = this.usedNames.has(trimmedName) && this.playerNames[playerId] !== trimmedName;
+                
+                if (isUsedByOther) {
+                    // Name is taken, revert to previous name or default
+                    const previousName = this.playerNames[playerId] || `Oyuncu ${playerId}`;
+                    input.value = previousName;
+                    input.style.borderColor = '#dc3545';
+                    
+                    // Show error message briefly
+                    setTimeout(() => {
+                        input.style.borderColor = '#dee2e6';
+                    }, 2000);
+                    
+                    return;
+                }
+                
+                // Name is valid, update
+                if (this.playerNames[playerId]) {
+                    this.usedNames.delete(this.playerNames[playerId]);
+                }
+                this.playerNames[playerId] = trimmedName;
+                this.usedNames.add(trimmedName);
+                input.style.borderColor = '#28a745';
+                
+                setTimeout(() => {
+                    input.style.borderColor = '#dee2e6';
+                }, 1000);
+            }
+
+            bindNameEvents() {
+                // Name validation is handled by onchange attribute in HTML
+            }
+
+            bindColorEvents() {
+                document.querySelectorAll('.color-option').forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        // Don't allow clicking disabled colors
+                        if (e.target.classList.contains('disabled')) {
+                            return;
+                        }
+                        
+                        const player = parseInt(e.target.dataset.player);
+                        const color = e.target.dataset.color;
+                        
+                        // Remove old color from used colors
+                        if (this.playerColors[player]) {
+                            this.usedColors.delete(this.playerColors[player]);
+                        }
+                        
+                        // Remove selection from other colors for this player
+                        document.querySelectorAll(`[data-player="${player}"]`).forEach(opt => {
+                            opt.classList.remove('selected');
+                        });
+                        
+                        // Add selection to clicked color
+                        e.target.classList.add('selected');
+                        
+                        // Update player color and used colors
+                        this.playerColors[player] = color;
+                        this.usedColors.add(color);
+                        
+                        // Update available colors for all players
+                        for (let i = 1; i <= this.playerCount; i++) {
+                            this.updateAvailableColors(i);
+                        }
+                    });
+                });
+            }
+
+            startGame() {
+                // Check if all players are saved
+                if (this.savedPlayers.size !== this.playerCount) {
+                    alert(`Lütfen tüm oyuncuları kaydedin! (${this.savedPlayers.size}/${this.playerCount} kaydedildi)`);
+                    return;
+                }
+                
+                // Hide setup screen and show game screen
+                document.getElementById('setupContainer').style.display = 'none';
+                document.getElementById('gameContainer').style.display = 'block';
+                
+                // Generate player stats UI
+                this.generatePlayerStatsUI();
+                
+                // Initialize and start the game
+                this.gameStarted = true;
+                this.initializeGame();
+                this.renderBoard();
+                this.updateUI();
+                this.bindEvents();
+            }
+
+            generatePlayerStatsUI() {
+                const playerStatsContainer = document.getElementById('playerStats');
+                const selectedCountStat = playerStatsContainer.querySelector('.stat');
+                playerStatsContainer.innerHTML = '';
+                
+                // Add player stats
+                for (let i = 1; i <= this.playerCount; i++) {
+                    const stat = document.createElement('div');
+                    stat.className = 'stat';
+                    stat.innerHTML = `
+                        <div class="stat-value" id="player${i}Territories">${this.playerTerritories[i]}</div>
+                        <div class="stat-label" id="player${i}Label">${this.playerNames[i]}</div>
+                    `;
+                    playerStatsContainer.appendChild(stat);
+                }
+                
+                // Add selected count stat back
+                playerStatsContainer.appendChild(selectedCountStat);
+            }
+
+            initializeGame() {
+                // Rastgele oyuncu başlangıç pozisyonları oluştur
+                const spawnPositions = this.generateRandomSpawnPositions();
+                
+                // Tüm oyuncular için bölge oluştur
+                for (let i = 1; i <= this.playerCount; i++) {
+                    this.createPlayerTerritory(spawnPositions[`player${i}`], `player${i}`);
+                }
+                
+                // NPC ülkelerini oluştur - tüm boş alanları doldur
+                this.createNPCCountries();
+            }
+
+            generateRandomSpawnPositions() {
+                const minDistance = 15; // Minimum mesafe
+                const margin = 8; // Kenarlardan minimum uzaklık
+                const maxAttempts = 200;
+                
+                for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                    const positions = {};
+                    let validPositions = true;
+                    
+                    // Her oyuncu için pozisyon oluştur
+                    for (let i = 1; i <= this.playerCount; i++) {
+                        let playerPosition = null;
+                        let playerAttempts = 0;
+                        
+                        while (playerAttempts < 50) {
+                            const candidate = {
+                                x: margin + Math.floor(Math.random() * (this.boardSize - 2 * margin)),
+                                y: margin + Math.floor(Math.random() * (this.boardSize - 2 * margin))
+                            };
+                            
+                            // Diğer oyunculardan minimum mesafe kontrolü
+                            let validDistance = true;
+                            for (let j = 1; j < i; j++) {
+                                const existingPos = positions[`player${j}`];
+                                const distance = Math.sqrt(
+                                    Math.pow(candidate.x - existingPos.x, 2) + 
+                                    Math.pow(candidate.y - existingPos.y, 2)
+                                );
+                                
+                                if (distance < minDistance) {
+                                    validDistance = false;
+                                    break;
+                                }
+                            }
+                            
+                            if (validDistance) {
+                                playerPosition = candidate;
+                                break;
+                            }
+                            
+                            playerAttempts++;
+                        }
+                        
+                        if (!playerPosition) {
+                            validPositions = false;
+                            break;
+                        }
+                        
+                        positions[`player${i}`] = playerPosition;
+                    }
+                    
+                    if (validPositions) {
+                        return positions;
+                    }
+                }
+                
+                // Eğer rastgele bulunamazsa, varsayılan güvenli pozisyonlar
+                const defaultPositions = {};
+                const gridSize = Math.ceil(Math.sqrt(this.playerCount));
+                const spacing = Math.floor((this.boardSize - 2 * margin) / gridSize);
+                
+                for (let i = 1; i <= this.playerCount; i++) {
+                    const row = Math.floor((i - 1) / gridSize);
+                    const col = (i - 1) % gridSize;
+                    
+                    defaultPositions[`player${i}`] = {
+                        x: margin + col * spacing + Math.floor(spacing / 2),
+                        y: margin + row * spacing + Math.floor(spacing / 2)
+                    };
+                }
+                
+                return defaultPositions;
+            }
+
+            generateNeutralPositions(playerPositions) {
+                const neutralPositions = [];
+                const minDistanceFromPlayers = 12;
+                const minDistanceBetweenNeutrals = 8;
+                const margin = 5;
+                
+                for (let i = 0; i < 3; i++) {
+                    let attempts = 0;
+                    const maxAttempts = 50;
+                    
+                    while (attempts < maxAttempts) {
+                        const position = {
+                            x: margin + Math.floor(Math.random() * (this.boardSize - 2 * margin)),
+                            y: margin + Math.floor(Math.random() * (this.boardSize - 2 * margin))
+                        };
+                        
+                        // Oyunculardan uzaklık kontrolü
+                        const distanceFromPlayer1 = Math.sqrt(
+                            Math.pow(position.x - playerPositions.player1.x, 2) + 
+                            Math.pow(position.y - playerPositions.player1.y, 2)
+                        );
+                        
+                        const distanceFromPlayer2 = Math.sqrt(
+                            Math.pow(position.x - playerPositions.player2.x, 2) + 
+                            Math.pow(position.y - playerPositions.player2.y, 2)
+                        );
+                        
+                        // Diğer tarafsız bölgelerden uzaklık kontrolü
+                        let validDistance = true;
+                        for (let existingPos of neutralPositions) {
+                            const distanceFromExisting = Math.sqrt(
+                                Math.pow(position.x - existingPos.x, 2) + 
+                                Math.pow(position.y - existingPos.y, 2)
+                            );
+                            
+                            if (distanceFromExisting < minDistanceBetweenNeutrals) {
+                                validDistance = false;
+                                break;
+                            }
+                        }
+                        
+                        if (distanceFromPlayer1 >= minDistanceFromPlayers && 
+                            distanceFromPlayer2 >= minDistanceFromPlayers && 
+                            validDistance) {
+                            neutralPositions.push(position);
+                            break;
+                        }
+                        
+                        attempts++;
+                    }
+                    
+                    // Eğer uygun pozisyon bulunamazsa, varsayılan pozisyon ekle
+                    if (neutralPositions.length <= i) {
+                        const defaultPositions = [
+                            { x: 20, y: 5 },
+                            { x: 5, y: 30 },
+                            { x: 40, y: 15 }
+                        ];
+                        neutralPositions.push(defaultPositions[i]);
+                    }
+                }
+                
+                return neutralPositions;
+            }
+
+            createPlayerTerritory(center, type) {
+                const positions = [
+                    {x: 0, y: 0}, {x: 1, y: 0}, {x: -1, y: 0}, {x: 0, y: 1}, {x: 0, y: -1},
+                    {x: 1, y: 1}, {x: -1, y: -1}, {x: 1, y: -1}, {x: -1, y: 1}, {x: 2, y: 0}
+                ];
+                
+                positions.forEach(pos => {
+                    const x = center.x + pos.x;
+                    const y = center.y + pos.y;
+                    if (this.isValidPosition(x, y)) {
+                        this.board[y][x] = type;
+                    }
+                });
+            }
+
+            createNPCCountries() {
+                let countryId = 1;
+                const maxAttempts = 1000;
+                let attempts = 0;
+                
+                // Tüm boş alanları NPC ülkeleriyle doldur
+                while (this.hasEmptyCells() && attempts < maxAttempts) {
+                    attempts++;
+                    
+                    // Rastgele boş bir başlangıç noktası bul
+                    const startPoint = this.findRandomEmptyCell();
+                    if (!startPoint) break;
+                    
+                    // Daha büyük ve düzenli boyutlar (50-200 kare arası)
+                    const minSize = 50;
+                    const maxSize = 200;
+                    const targetSize = minSize + Math.floor(Math.random() * (maxSize - minSize));
+                    
+                    // NPC ülkesi oluştur
+                    const countryType = `npc${countryId}`;
+                    const countryName = this.npcNames[(countryId - 1) % this.npcNames.length];
+                    
+                    const createdCells = this.createNPCTerritory(startPoint, countryType, targetSize);
+                    
+                    // Minimum 30 kare olmalı, yoksa kabul etme
+                    if (createdCells.length >= 30) {
+                        this.npcCountries.push({
+                            id: countryId,
+                            name: countryName,
+                            type: countryType,
+                            cells: createdCells,
+                            size: createdCells.length
+                        });
+                        countryId++;
+                    }
+                }
+            }
+
+            hasEmptyCells() {
+                for (let y = 0; y < this.boardSize; y++) {
+                    for (let x = 0; x < this.boardSize; x++) {
+                        if (this.board[y][x] === 'empty') {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            findRandomEmptyCell() {
+                const emptyCells = [];
+                for (let y = 0; y < this.boardSize; y++) {
+                    for (let x = 0; x < this.boardSize; x++) {
+                        if (this.board[y][x] === 'empty') {
+                            emptyCells.push({x, y});
+                        }
+                    }
+                }
+                
+                if (emptyCells.length === 0) return null;
+                return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            }
+
+            createNPCTerritory(startPoint, countryType, targetSize) {
+                const createdCells = [];
+                const queue = [startPoint];
+                const visited = new Set();
+                
+                // Daha düzenli şekiller için öncelik sırası kullan
+                while (queue.length > 0 && createdCells.length < targetSize) {
+                    // İlk elemanı al (FIFO - daha düzenli büyüme)
+                    const current = queue.shift();
+                    const key = `${current.x},${current.y}`;
+                    
+                    if (visited.has(key) || !this.isValidPosition(current.x, current.y) || 
+                        this.board[current.y][current.x] !== 'empty') {
+                        continue;
+                    }
+                    
+                    visited.add(key);
+                    this.board[current.y][current.x] = countryType;
+                    createdCells.push({x: current.x, y: current.y});
+                    
+                    // Komşu kareleri düzenli sırayla ekle (önce yatay, sonra dikey)
+                    const neighbors = [
+                        {x: current.x + 1, y: current.y},  // Sağ
+                        {x: current.x - 1, y: current.y},  // Sol
+                        {x: current.x, y: current.y + 1},  // Aşağı
+                        {x: current.x, y: current.y - 1}   // Yukarı
+                    ];
+                    
+                    // Komşuları kontrol et ve ekle
+                    neighbors.forEach(neighbor => {
+                        const neighborKey = `${neighbor.x},${neighbor.y}`;
+                        if (!visited.has(neighborKey) && 
+                            this.isValidPosition(neighbor.x, neighbor.y) &&
+                            this.board[neighbor.y][neighbor.x] === 'empty') {
+                            
+                            // %95 şansla komşuyu kuyruğa ekle (çok düzenli şekiller için)
+                            if (Math.random() < 0.95) {
+                                queue.push(neighbor);
+                            }
+                        }
+                    });
+                    
+                    // Her 10 karede bir kuyruğu karıştır (çok düz çizgiler olmasın)
+                    if (createdCells.length % 10 === 0 && queue.length > 1) {
+                        const shuffleCount = Math.min(3, queue.length);
+                        for (let i = 0; i < shuffleCount; i++) {
+                            const randomIndex = Math.floor(Math.random() * queue.length);
+                            [queue[0], queue[randomIndex]] = [queue[randomIndex], queue[0]];
+                        }
+                    }
+                }
+                
+                return createdCells;
+            }
+
+            isValidPosition(x, y) {
+                return x >= 0 && x < this.boardSize && y >= 0 && y < this.boardSize;
+            }
+
+            renderBoard() {
+                const boardElement = document.getElementById('gameBoard');
+                boardElement.innerHTML = '';
+                
+                for (let y = 0; y < this.boardSize; y++) {
+                    for (let x = 0; x < this.boardSize; x++) {
+                        const cell = document.createElement('div');
+                        cell.className = `cell ${this.board[y][x]}`;
+                        cell.dataset.x = x;
+                        cell.dataset.y = y;
+                        
+                        // Apply custom colors for all players
+                        for (let i = 1; i <= this.playerCount; i++) {
+                            if (this.board[y][x] === `player${i}`) {
+                                cell.style.backgroundColor = this.playerColors[i];
+                                break;
+                            }
+                        }
+                        
+                        // Add NPC country borders only on edges
+                        if (this.board[y][x].startsWith('npc')) {
+                            this.addNPCBorders(cell, x, y);
+                        }
+                        
+                        boardElement.appendChild(cell);
+                    }
+                }
+                
+                // Add territory labels after rendering
+                if (this.gameStarted) {
+                    this.addTerritoryLabels();
+                }
+            }
+
+            addNPCBorders(cell, x, y) {
+                const currentType = this.board[y][x];
+                
+                // Check each direction for borders
+                const directions = [
+                    { dx: 0, dy: -1, class: 'npc-border-top' },    // Top
+                    { dx: 0, dy: 1, class: 'npc-border-bottom' },  // Bottom
+                    { dx: -1, dy: 0, class: 'npc-border-left' },   // Left
+                    { dx: 1, dy: 0, class: 'npc-border-right' }    // Right
+                ];
+                
+                directions.forEach(dir => {
+                    const newX = x + dir.dx;
+                    const newY = y + dir.dy;
+                    
+                    // Add border if:
+                    // 1. At map edge, OR
+                    // 2. Adjacent cell is different type AND we should draw this border
+                    if (!this.isValidPosition(newX, newY)) {
+                        // Always draw border at map edge
+                        cell.classList.add(dir.class);
+                    } else if (this.board[newY][newX] !== currentType) {
+                        // Only draw border if we have priority over the neighbor
+                        const neighborType = this.board[newY][newX];
+                        
+                        // Priority rules:
+                        // 1. Player territories always get borders
+                        // 2. Between NPC countries, only the one with lower ID draws the border
+                        // 3. Empty cells don't affect border drawing
+                        
+                        if (neighborType.startsWith('player') || neighborType === 'empty') {
+                            // Always draw border against players or empty cells
+                            cell.classList.add(dir.class);
+                        } else if (neighborType.startsWith('npc') && currentType.startsWith('npc')) {
+                            // Between NPC countries, only lower ID draws the border
+                            const currentId = parseInt(currentType.replace('npc', ''));
+                            const neighborId = parseInt(neighborType.replace('npc', ''));
+                            
+                            if (currentId < neighborId) {
+                                cell.classList.add(dir.class);
+                            }
+                        }
+                    }
+                });
+            }
+
+            addTerritoryLabels() {
+                const boardElement = document.getElementById('gameBoard');
+                
+                // Remove existing labels
+                document.querySelectorAll('.territory-label').forEach(label => label.remove());
+                
+                // Add player territory labels
+                for (let player = 1; player <= this.playerCount; player++) {
+                    const territories = this.findPlayerTerritories(player);
+                    
+                    territories.forEach(territory => {
+                        if (territory.cells.length >= 3) {
+                            const center = this.calculateTerritoryCenter(territory.cells);
+                            const size = this.calculateLabelSize(territory.cells.length);
+                            
+                            const label = document.createElement('div');
+                            label.className = 'territory-label';
+                            label.textContent = this.playerNames[player];
+                            label.style.fontSize = size + 'px';
+                            label.style.position = 'absolute';
+                            label.style.left = (center.x * 13 + 26) + 'px';
+                            label.style.top = (center.y * 13 + 26) + 'px';
+                            label.style.color = 'white';
+                            label.style.textShadow = '1px 1px 2px rgba(0,0,0,0.8)';
+                            
+                            boardElement.style.position = 'relative';
+                            boardElement.appendChild(label);
+                        }
+                    });
+                }
+                
+                // Add NPC country labels
+                this.npcCountries.forEach(country => {
+                    if (country.cells.length >= 8) { // Only label larger NPC countries
+                        const center = this.calculateTerritoryCenter(country.cells);
+                        const size = Math.max(8, Math.min(12, Math.floor(country.cells.length / 8)));
+                        
+                        const label = document.createElement('div');
+                        label.className = 'territory-label';
+                        label.textContent = country.name;
+                        label.style.fontSize = size + 'px';
+                        label.style.position = 'absolute';
+                        label.style.left = (center.x * 13 + 26) + 'px';
+                        label.style.top = (center.y * 13 + 26) + 'px';
+                        label.style.color = '#495057';
+                        label.style.textShadow = '1px 1px 2px rgba(255,255,255,0.8)';
+                        label.style.fontWeight = 'bold';
+                        
+                        boardElement.style.position = 'relative';
+                        boardElement.appendChild(label);
+                    }
+                });
+            }
+
+            findPlayerTerritories(player) {
+                const playerType = `player${player}`;
+                const visited = new Set();
+                const territories = [];
+                
+                for (let y = 0; y < this.boardSize; y++) {
+                    for (let x = 0; x < this.boardSize; x++) {
+                        if (this.board[y][x] === playerType && !visited.has(`${x},${y}`)) {
+                            const territory = this.exploreTerritory(x, y, playerType, visited);
+                            if (territory.length > 0) {
+                                territories.push({ cells: territory });
+                            }
+                        }
+                    }
+                }
+                
+                return territories;
+            }
+
+            exploreTerritory(startX, startY, playerType, visited) {
+                const territory = [];
+                const queue = [{x: startX, y: startY}];
+                
+                while (queue.length > 0) {
+                    const current = queue.shift();
+                    const key = `${current.x},${current.y}`;
+                    
+                    if (visited.has(key) || !this.isValidPosition(current.x, current.y) || 
+                        this.board[current.y][current.x] !== playerType) {
+                        continue;
+                    }
+                    
+                    visited.add(key);
+                    territory.push(current);
+                    
+                    // Add adjacent cells
+                    const directions = [
+                        {dx: 0, dy: 1}, {dx: 0, dy: -1}, {dx: 1, dy: 0}, {dx: -1, dy: 0}
+                    ];
+                    
+                    directions.forEach(dir => {
+                        queue.push({x: current.x + dir.dx, y: current.y + dir.dy});
+                    });
+                }
+                
+                return territory;
+            }
+
+            calculateTerritoryCenter(cells) {
+                const sumX = cells.reduce((sum, cell) => sum + cell.x, 0);
+                const sumY = cells.reduce((sum, cell) => sum + cell.y, 0);
+                
+                return {
+                    x: Math.round(sumX / cells.length),
+                    y: Math.round(sumY / cells.length)
+                };
+            }
+
+            calculateLabelSize(cellCount) {
+                if (cellCount >= 20) return 14;
+                if (cellCount >= 15) return 12;
+                if (cellCount >= 10) return 10;
+                if (cellCount >= 6) return 8;
+                return 7;
+            }
+
+            bindEvents() {
+                const boardElement = document.getElementById('gameBoard');
+                const flipCard = document.getElementById('flipCard');
+                
+                let isDragging = false;
+                let dragMode = null; // 'select' or 'deselect'
+                let mouseDownCell = null;
+                let hasMoved = false;
+                
+                // Mouse events for drag selection
+                boardElement.addEventListener('mousedown', (e) => {
+                    if (e.target.classList.contains('cell')) {
+                        isDragging = true;
+                        hasMoved = false;
+                        mouseDownCell = e.target;
+                        
+                        // Determine drag mode based on first cell
+                        const x = parseInt(e.target.dataset.x);
+                        const y = parseInt(e.target.dataset.y);
+                        const cellKey = `${x},${y}`;
+                        const isSelected = this.selectedCells.includes(cellKey);
+                        
+                        if (isSelected) {
+                            dragMode = 'deselect';
+                        } else {
+                            dragMode = 'select';
+                        }
+                        
+                        e.preventDefault(); // Prevent text selection
+                    }
+                });
+                
+                boardElement.addEventListener('mousemove', (e) => {
+                    if (isDragging && e.target.classList.contains('cell')) {
+                        // If mouse moved to a different cell, mark as moved
+                        if (e.target !== mouseDownCell) {
+                            hasMoved = true;
+                        }
+                        
+                        // Only handle hover if we've actually moved
+                        if (hasMoved) {
+                            this.handleCellHover(e.target, dragMode);
+                        }
+                    }
+                });
+                
+                boardElement.addEventListener('mouseup', (e) => {
+                    if (isDragging && e.target.classList.contains('cell')) {
+                        // If we haven't moved, treat as a single click
+                        if (!hasMoved && e.target === mouseDownCell) {
+                            this.handleCellClick(e.target);
+                        }
+                    }
+                    
+                    isDragging = false;
+                    dragMode = null;
+                    mouseDownCell = null;
+                    hasMoved = false;
+                });
+                
+                // Prevent dragging outside the board
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                    dragMode = null;
+                    mouseDownCell = null;
+                    hasMoved = false;
+                });
+                
+                // Card flip event
+                flipCard.addEventListener('click', () => {
+                    if (this.selectedCells.length > 0 && !flipCard.classList.contains('flipping')) {
+                        this.executeAttack();
+                    }
+                });
+            }
+
+            handleCellClick(cell) {
+                const x = parseInt(cell.dataset.x);
+                const y = parseInt(cell.dataset.y);
+                const cellType = this.board[y][x];
+                
+                // Seçilebilir kare kontrolü
+                if (!this.isSelectableCell(x, y)) {
+                    return;
+                }
+                
+                // Kendi topraklarını seçemez
+                if (cellType === `player${this.currentPlayer}`) {
+                    return;
+                }
+                
+                const cellKey = `${x},${y}`;
+                const isSelected = this.selectedCells.includes(cellKey);
+                
+                if (isSelected) {
+                    // Seçimi kaldır
+                    this.selectedCells = this.selectedCells.filter(key => key !== cellKey);
+                    cell.classList.remove('selected');
+                } else {
+                    // Maksimum seçim kontrolü - 1 kare kaldıysa 1 kare seçebilir
+                    const maxSelection = this.playerTerritories[this.currentPlayer] === 1 ? 1 : this.playerTerritories[this.currentPlayer] - 1;
+                    if (this.selectedCells.length >= maxSelection) {
+                        return;
+                    }
+                    
+                    // Seçimi ekle
+                    this.selectedCells.push(cellKey);
+                    cell.classList.add('selected');
+                }
+                
+                this.updateUI();
+            }
+
+            handleCellHover(cell, dragMode) {
+                const x = parseInt(cell.dataset.x);
+                const y = parseInt(cell.dataset.y);
+                const cellType = this.board[y][x];
+                
+                // Seçilebilir kare kontrolü
+                if (!this.isSelectableCell(x, y)) {
+                    return;
+                }
+                
+                // Kendi topraklarını seçemez
+                if (cellType === `player${this.currentPlayer}`) {
+                    return;
+                }
+                
+                const cellKey = `${x},${y}`;
+                const isSelected = this.selectedCells.includes(cellKey);
+                
+                if (dragMode === 'deselect' && isSelected) {
+                    // Seçili kareyi seçimden kaldır (sürüklerken)
+                    this.selectedCells = this.selectedCells.filter(key => key !== cellKey);
+                    cell.classList.remove('selected');
+                    this.updateUI();
+                } else if (dragMode === 'select' && !isSelected) {
+                    // Seçili olmayan kareleri seç (sürüklerken)
+                    // Maksimum seçim kontrolü - 1 kare kaldıysa 1 kare seçebilir
+                    const maxSelection = this.playerTerritories[this.currentPlayer] === 1 ? 1 : this.playerTerritories[this.currentPlayer] - 1;
+                    if (this.selectedCells.length >= maxSelection) {
+                        return;
+                    }
+                    
+                    // Seçimi ekle
+                    this.selectedCells.push(cellKey);
+                    cell.classList.add('selected');
+                    this.updateUI();
+                }
+            }
+
+            isSelectableCell(x, y) {
+                // Kendi topraklarına bitişik mi?
+                if (this.isAdjacentToPlayer(x, y, this.currentPlayer)) {
+                    return true;
+                }
+                
+                // Seçili karelere bitişik mi?
+                if (this.isAdjacentToSelectedCells(x, y)) {
+                    return true;
+                }
+                
+                return false;
+            }
+
+            isAdjacentToSelectedCells(x, y) {
+                const directions = [
+                    {dx: 0, dy: 1}, {dx: 0, dy: -1}, {dx: 1, dy: 0}, {dx: -1, dy: 0}
+                ];
+                
+                for (let dir of directions) {
+                    const newX = x + dir.dx;
+                    const newY = y + dir.dy;
+                    const cellKey = `${newX},${newY}`;
+                    
+                    if (this.selectedCells.includes(cellKey)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            isAdjacentToPlayer(x, y, player) {
+                const directions = [
+                    {dx: 0, dy: 1}, {dx: 0, dy: -1}, {dx: 1, dy: 0}, {dx: -1, dy: 0}
+                ];
+                
+                for (let dir of directions) {
+                    const newX = x + dir.dx;
+                    const newY = y + dir.dy;
+                    
+                    if (this.isValidPosition(newX, newY) && 
+                        this.board[newY][newX] === `player${player}`) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            executeAttack() {
+                if (this.selectedCells.length === 0) return;
+                
+                // Kart çevirme animasyonu başlat
+                this.flipCard();
+            }
+
+            flipCard() {
+                const flipCard = document.getElementById('flipCard');
+                const flipCardInner = document.getElementById('flipCardInner');
+                
+                // Kartı devre dışı bırak
+                flipCard.classList.add('disabled', 'flipping');
+                
+                // Animasyon süresi boyunca rastgele döndürme
+                const spinDuration = 4000; // 4 saniye
+                let currentRotation = 0;
+                
+                const spinInterval = setInterval(() => {
+                    currentRotation += 180;
+                    flipCardInner.style.transform = `rotateY(${currentRotation}deg)`;
+                }, 150);
+                
+                // Animasyon bitince sonucu belirle ve göster
+                setTimeout(() => {
+                    clearInterval(spinInterval);
+                    
+                    // SON ANDA sonucu belirle (gerçek rastgele)
+                    const isSuccess = Math.random() < 0.5;
+                    
+                    // Sonuca göre final pozisyonu belirle
+                    const finalRotation = isSuccess ? 0 : 180; // 0 = KAZAN, 180 = KAYBET
+                    flipCardInner.style.transform = `rotateY(${finalRotation}deg)`;
+                    
+                    // Kart animasyonunu durdur
+                    flipCard.classList.remove('flipping');
+                    
+                    // Sonucu işle
+                    setTimeout(() => {
+                        this.processCardResult(isSuccess);
+                        flipCard.classList.remove('disabled');
+                    }, 500);
+                    
+                }, spinDuration);
+            }
+
+            showCoinFlip() {
+                // Yazı tura sonucunu önceden belirle (50% şans)
+                const isSuccess = Math.random() < 0.5;
+                
+                // Coin flip container oluştur
+                const coinContainer = document.createElement('div');
+                coinContainer.className = 'coin-flip-container';
+                
+                coinContainer.innerHTML = `
+                    <div class="coin">
+                        <div class="coin-side coin-heads">
+                            KAZAN
+                        </div>
+                        <div class="coin-side coin-tails">
+                            KAYBET
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(coinContainer);
+                
+                // 3 saniye sonra sonucu göster
+                setTimeout(() => {
+                    document.body.removeChild(coinContainer);
+                    this.showCoinResult(isSuccess);
+                }, 3000);
+            }
+
+            showCoinResult(isSuccess) {
+                const resultContainer = document.createElement('div');
+                resultContainer.className = `coin-result ${isSuccess ? 'win' : 'lose'}`;
+                
+                const resultIcon = isSuccess ? 'KAZAN' : 'KAYBET';
+                const resultTitle = isSuccess ? 'Kazandınız! 🎉' : 'Kaybettiniz! 💥';
+                const resultText = isSuccess ? 
+                    'Seçtiğiniz kareler artık sizin!' : 
+                    'Topraklarınızdan bazılarını kaybettiniz!';
+                
+                resultContainer.innerHTML = `
+                    <div class="coin-result-icon">
+                        ${resultIcon}
+                    </div>
+                    <h2>${resultTitle}</h2>
+                    <p>${resultText}</p>
+                    <button class="continue-btn" onclick="game.processCoinResult(${isSuccess})">Devam Et</button>
+                `;
+                
+                document.body.appendChild(resultContainer);
+            }
+
+            processCardResult(isSuccess) {
+                // Saldırı sonucunu işle
+                if (isSuccess) {
+                    this.handleSuccessfulAttack();
+                    this.showBattleResult(`${this.playerNames[this.currentPlayer]} kazandı! 🎉`, 'success');
+                } else {
+                    this.handleFailedAttack();
+                    this.showBattleResult(`${this.playerNames[this.currentPlayer]} kaybetti! 💥`, 'failure');
+                }
+                
+                this.selectedCells = [];
+                this.currentPlayer = (this.currentPlayer % this.playerCount) + 1;
+                this.updateTerritoryCount();
+                this.renderBoard();
+                this.updateUI();
+                this.checkGameOver();
+            }
+
+            handleSuccessfulAttack() {
+                this.selectedCells.forEach(cellKey => {
+                    const [x, y] = cellKey.split(',').map(Number);
+                    const oldType = this.board[y][x];
+                    
+                    // Eski sahipten toprak çıkar
+                    if (oldType.startsWith('player')) {
+                        const oldPlayer = parseInt(oldType.replace('player', ''));
+                        this.playerTerritories[oldPlayer]--;
+                    } else if (oldType.startsWith('npc')) {
+                        // NPC ülkesinden toprak alındı - NPC ülkesini güncelle
+                        this.updateNPCCountryAfterLoss(oldType, x, y);
+                    }
+                    
+                    // Yeni sahibe toprak ekle
+                    this.board[y][x] = `player${this.currentPlayer}`;
+                    this.playerTerritories[this.currentPlayer]++;
+                });
+            }
+
+            handleFailedAttack() {
+                // Eğer oyuncunun sadece 1 karesi varsa, oyunu kaybeder
+                if (this.playerTerritories[this.currentPlayer] === 1) {
+                    // Son kareyi de kaybet
+                    for (let y = 0; y < this.boardSize; y++) {
+                        for (let x = 0; x < this.boardSize; x++) {
+                            if (this.board[y][x] === `player${this.currentPlayer}`) {
+                                const targetType = this.getAttackTarget();
+                                this.board[y][x] = targetType;
+                                this.playerTerritories[this.currentPlayer] = 0;
+                                
+                                if (targetType.startsWith('player')) {
+                                    const targetPlayer = parseInt(targetType.replace('player', ''));
+                                    this.playerTerritories[targetPlayer]++;
+                                } else if (targetType.startsWith('npc')) {
+                                    const country = this.npcCountries.find(c => c.type === targetType);
+                                    if (country) {
+                                        country.cells.push({x: x, y: y});
+                                        country.size = country.cells.length;
+                                    }
+                                }
+                                return; // Sadece bir kare var, çık
+                            }
+                        }
+                    }
+                    return;
+                }
+                
+                // Seçilen kareleri NPC ülkelerine göre grupla
+                const targetGroups = this.groupSelectedCellsByTarget();
+                
+                // Kaybedilecek toplam kare sayısı
+                const totalLoss = this.selectedCells.length;
+                
+                // Kaybedilecek kareleri bütünlüğü bozmayacak şekilde seç
+                const cellsToLose = this.selectCellsToLoseWhileKeepingConnectivity(totalLoss);
+                
+                // Her NPC ülkesine orantılı olarak toprak ver
+                let cellIndex = 0;
+                Object.keys(targetGroups).forEach(targetType => {
+                    const targetCount = targetGroups[targetType];
+                    
+                    // Bu NPC'ye verilecek kare sayısı
+                    const cellsToGive = Math.min(targetCount, cellsToLose.length - cellIndex);
+                    
+                    for (let i = 0; i < cellsToGive && cellIndex < cellsToLose.length; i++) {
+                        const cell = cellsToLose[cellIndex];
+                        this.board[cell.y][cell.x] = targetType;
+                        this.playerTerritories[this.currentPlayer]--;
+                        
+                        if (targetType.startsWith('player')) {
+                            const targetPlayer = parseInt(targetType.replace('player', ''));
+                            this.playerTerritories[targetPlayer]++;
+                        } else if (targetType.startsWith('npc')) {
+                            // NPC ülkesine toprak ekle
+                            const country = this.npcCountries.find(c => c.type === targetType);
+                            if (country) {
+                                country.cells.push({x: cell.x, y: cell.y});
+                                country.size = country.cells.length;
+                            }
+                        }
+                        
+                        cellIndex++;
+                    }
+                });
+            }
+
+            selectCellsToLoseWhileKeepingConnectivity(maxLoss) {
+                const playerType = `player${this.currentPlayer}`;
+                const playerCells = [];
+                
+                // Tüm oyuncu karelerini topla
+                for (let y = 0; y < this.boardSize; y++) {
+                    for (let x = 0; x < this.boardSize; x++) {
+                        if (this.board[y][x] === playerType) {
+                            playerCells.push({x, y});
+                        }
+                    }
+                }
+                
+                const cellsToLose = [];
+                const tempBoard = this.board.map(row => [...row]); // Geçici board kopyası
+                
+                for (let i = 0; i < maxLoss && playerCells.length > 1; i++) {
+                    // Sınır karelerini bul
+                    const borderCells = this.getBorderCellsForConnectivity(tempBoard, playerType);
+                    
+                    if (borderCells.length === 0) break;
+                    
+                    // Her sınır karesini test et - hangisi kaldırılırsa bütünlük bozulmaz?
+                    let bestCellToRemove = null;
+                    
+                    for (let cell of borderCells) {
+                        // Bu kareyi geçici olarak kaldır
+                        tempBoard[cell.y][cell.x] = 'empty';
+                        
+                        // Bütünlük kontrol et
+                        if (this.isPlayerTerritoryConnected(tempBoard, playerType)) {
+                            bestCellToRemove = cell;
+                            break; // İlk uygun kareyi al
+                        }
+                        
+                        // Geri koy
+                        tempBoard[cell.y][cell.x] = playerType;
+                    }
+                    
+                    if (bestCellToRemove) {
+                        cellsToLose.push(bestCellToRemove);
+                        tempBoard[bestCellToRemove.y][bestCellToRemove.x] = 'empty';
+                        
+                        // playerCells listesinden de çıkar
+                        const index = playerCells.findIndex(c => c.x === bestCellToRemove.x && c.y === bestCellToRemove.y);
+                        if (index !== -1) {
+                            playerCells.splice(index, 1);
+                        }
+                    } else {
+                        // Bütünlüğü bozmadan kare kaldırılamıyor, dur
+                        break;
+                    }
+                }
+                
+                return cellsToLose;
+            }
+
+            getBorderCellsForConnectivity(board, playerType) {
+                const borderCells = [];
+                
+                for (let y = 0; y < this.boardSize; y++) {
+                    for (let x = 0; x < this.boardSize; x++) {
+                        if (board[y][x] === playerType) {
+                            // Sınırda mı kontrol et (en az bir komşusu farklı)
+                            const directions = [
+                                {dx: 0, dy: 1}, {dx: 0, dy: -1}, {dx: 1, dy: 0}, {dx: -1, dy: 0}
+                            ];
+                            
+                            let isBorder = false;
+                            for (let dir of directions) {
+                                const newX = x + dir.dx;
+                                const newY = y + dir.dy;
+                                
+                                if (!this.isValidPosition(newX, newY) || 
+                                    board[newY][newX] !== playerType) {
+                                    isBorder = true;
+                                    break;
+                                }
+                            }
+                            
+                            if (isBorder) {
+                                borderCells.push({x, y});
+                            }
+                        }
+                    }
+                }
+                
+                return borderCells;
+            }
+
+            isPlayerTerritoryConnected(board, playerType) {
+                // İlk oyuncu karesini bul
+                let startCell = null;
+                for (let y = 0; y < this.boardSize && !startCell; y++) {
+                    for (let x = 0; x < this.boardSize && !startCell; x++) {
+                        if (board[y][x] === playerType) {
+                            startCell = {x, y};
+                        }
+                    }
+                }
+                
+                if (!startCell) return true; // Hiç kare yoksa bağlı sayılır
+                
+                // BFS ile tüm bağlı kareleri bul
+                const visited = new Set();
+                const queue = [startCell];
+                visited.add(`${startCell.x},${startCell.y}`);
+                
+                while (queue.length > 0) {
+                    const current = queue.shift();
+                    
+                    const directions = [
+                        {dx: 0, dy: 1}, {dx: 0, dy: -1}, {dx: 1, dy: 0}, {dx: -1, dy: 0}
+                    ];
+                    
+                    for (let dir of directions) {
+                        const newX = current.x + dir.dx;
+                        const newY = current.y + dir.dy;
+                        const key = `${newX},${newY}`;
+                        
+                        if (this.isValidPosition(newX, newY) && 
+                            !visited.has(key) && 
+                            board[newY][newX] === playerType) {
+                            visited.add(key);
+                            queue.push({x: newX, y: newY});
+                        }
+                    }
+                }
+                
+                // Tüm oyuncu karelerinin sayısını bul
+                let totalPlayerCells = 0;
+                for (let y = 0; y < this.boardSize; y++) {
+                    for (let x = 0; x < this.boardSize; x++) {
+                        if (board[y][x] === playerType) {
+                            totalPlayerCells++;
+                        }
+                    }
+                }
+                
+                // Ziyaret edilen kare sayısı toplam kare sayısına eşitse bağlı
+                return visited.size === totalPlayerCells;
+            }
+
+            getPlayerBorderCells(player) {
+                const borderCells = [];
+                
+                for (let y = 0; y < this.boardSize; y++) {
+                    for (let x = 0; x < this.boardSize; x++) {
+                        if (this.board[y][x] === `player${player}`) {
+                            // Sınırda mı kontrol et
+                            const directions = [
+                                {dx: 0, dy: 1}, {dx: 0, dy: -1}, {dx: 1, dy: 0}, {dx: -1, dy: 0}
+                            ];
+                            
+                            for (let dir of directions) {
+                                const newX = x + dir.dx;
+                                const newY = y + dir.dy;
+                                
+                                if (!this.isValidPosition(newX, newY) || 
+                                    this.board[newY][newX] !== `player${player}`) {
+                                    borderCells.push({x, y});
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                return borderCells;
+            }
+
+            updateNPCCountryAfterLoss(npcType, x, y) {
+                const country = this.npcCountries.find(c => c.type === npcType);
+                if (country) {
+                    // Bu kareyi ülkenin karelerinden çıkar
+                    country.cells = country.cells.filter(cell => !(cell.x === x && cell.y === y));
+                    country.size = country.cells.length;
+                }
+            }
+
+            groupSelectedCellsByTarget() {
+                const targetGroups = {};
+                
+                this.selectedCells.forEach(cellKey => {
+                    const [x, y] = cellKey.split(',').map(Number);
+                    const targetType = this.board[y][x];
+                    
+                    if (!targetGroups[targetType]) {
+                        targetGroups[targetType] = 0;
+                    }
+                    targetGroups[targetType]++;
+                });
+                
+                return targetGroups;
+            }
+
+            getAttackTarget() {
+                // Seçilen karelerin çoğunluğuna göre hedef belirle
+                const targetTypes = this.selectedCells.map(cellKey => {
+                    const [x, y] = cellKey.split(',').map(Number);
+                    return this.board[y][x];
+                });
+                
+                const typeCounts = {};
+                targetTypes.forEach(type => {
+                    typeCounts[type] = (typeCounts[type] || 0) + 1;
+                });
+                
+                const mostCommonType = Object.keys(typeCounts).reduce((a, b) => 
+                    typeCounts[a] > typeCounts[b] ? a : b
+                );
+                
+                // NPC ülkesi ise rastgele bir NPC ülkesi döndür
+                if (mostCommonType.startsWith('npc')) {
+                    const availableNPCs = this.npcCountries.filter(c => c.size > 0);
+                    if (availableNPCs.length > 0) {
+                        const randomNPC = availableNPCs[Math.floor(Math.random() * availableNPCs.length)];
+                        return randomNPC.type;
+                    }
+                }
+                
+                return mostCommonType === 'empty' ? 'empty' : mostCommonType;
+            }
+
+            updateTerritoryCount() {
+                // Gerçek sayımı yap
+                const counts = {};
+                for (let i = 1; i <= this.playerCount; i++) {
+                    counts[i] = 0;
+                }
+                
+                for (let y = 0; y < this.boardSize; y++) {
+                    for (let x = 0; x < this.boardSize; x++) {
+                        for (let i = 1; i <= this.playerCount; i++) {
+                            if (this.board[y][x] === `player${i}`) {
+                                counts[i]++;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                this.playerTerritories = counts;
+            }
+
+            updateUI() {
+                const currentPlayerElement = document.getElementById('currentPlayer');
+                const selectedCountElement = document.getElementById('selectedCount');
+                const maxSelectionElement = document.getElementById('maxSelection');
+                const flipCard = document.getElementById('flipCard');
+                
+                currentPlayerElement.textContent = `${this.playerNames[this.currentPlayer]}'in Sırası`;
+                currentPlayerElement.style.backgroundColor = this.playerColors[this.currentPlayer];
+                
+                // Update all player territories
+                for (let i = 1; i <= this.playerCount; i++) {
+                    const territoriesElement = document.getElementById(`player${i}Territories`);
+                    const labelElement = document.getElementById(`player${i}Label`);
+                    
+                    if (territoriesElement) {
+                        territoriesElement.textContent = this.playerTerritories[i];
+                    }
+                    if (labelElement) {
+                        labelElement.textContent = this.playerNames[i];
+                    }
+                }
+                
+                selectedCountElement.textContent = this.selectedCells.length;
+                
+                const maxSelection = this.playerTerritories[this.currentPlayer] === 1 ? 1 : this.playerTerritories[this.currentPlayer] - 1;
+                maxSelectionElement.textContent = maxSelection;
+                
+                // Kartı etkinleştir/devre dışı bırak
+                if (this.selectedCells.length === 0) {
+                    flipCard.classList.add('disabled');
+                } else {
+                    flipCard.classList.remove('disabled');
+                }
+            }
+
+            showBattleResult(message, type) {
+                const resultElement = document.createElement('div');
+                resultElement.className = `battle-result ${type}`;
+                resultElement.textContent = message;
+                
+                document.body.appendChild(resultElement);
+                
+                setTimeout(() => {
+                    document.body.removeChild(resultElement);
+                }, 2000);
+            }
+
+            checkGameOver() {
+                const totalTerritories = this.boardSize * this.boardSize;
+                const winThreshold = Math.floor(totalTerritories * 0.5); // 50% for multiple players
+                
+                let winner = null;
+                let activePlayers = 0;
+                let lastActivePlayer = null;
+                
+                // Check for territory-based win or elimination
+                for (let i = 1; i <= this.playerCount; i++) {
+                    if (this.playerTerritories[i] >= winThreshold) {
+                        winner = i;
+                        break;
+                    }
+                    
+                    if (this.playerTerritories[i] > 0) {
+                        activePlayers++;
+                        lastActivePlayer = i;
+                    }
+                }
+                
+                // If only one player remains, they win
+                if (activePlayers === 1 && !winner) {
+                    winner = lastActivePlayer;
+                }
+                
+                if (winner) {
+                    this.showGameOver(winner);
+                }
+            }
+
+            showGameOver(winner) {
+                const gameOverElement = document.createElement('div');
+                gameOverElement.className = 'game-over';
+                gameOverElement.innerHTML = `
+                    <div class="game-over-content">
+                        <div class="winner-text">🏆 ${this.playerNames[winner]} Kazandı! 🏆</div>
+                        <p>Tebrikler! Haritanın büyük bir kısmını ele geçirdiniz!</p>
+                        <button class="restart-btn" onclick="location.reload()">🔄 Yeni Oyun</button>
+                    </div>
+                `;
+                
+                document.body.appendChild(gameOverElement);
+            }
+        }
+
+        // Oyunu başlat
+        let game;
+        window.addEventListener('DOMContentLoaded', () => {
+            game = new SquareWars();
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97732754a69ce184',t:'MTc1NjU0NTAxMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
